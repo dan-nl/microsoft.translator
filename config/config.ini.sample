@@ -1,0 +1,6 @@
+; This is a sample configuration file
+; replace the values below with those that match your registered application
+; in microsoft’s azure marketplace
+[azure marketplace credentials]
+client-id = 'your_client_id'
+client-secret = 'your_secret'

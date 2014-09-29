@@ -38,6 +38,14 @@ window.microsoft = (function( microsoft, $ ) {
 		languageCodes = ["ar", "bg", "ca", "zh-CHS", "zh-CHT", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "ht", "he", "hi", "mww", "hu", "id", "it", "ja", "tlh", "tlh-Qaak", "ko", "lv", "lt", "ms", "mt", "no", "fa", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "th", "tr", "uk", "ur", "vi", "cy"],
 
 		/**
+		 * A string array containing the language codes supported for speech
+		 * synthesis by the Translator Services (retrieved on 2014-09-28).
+		 *
+		 * @type array
+		 */
+		languagesForSpeak = ["ca", "ca-es", "da", "da-dk", "de", "de-de", "en", "en-au", "en-ca", "en-gb", "en-in", "en-us", "es", "es-es", "es-mx", "fi", "fi-fi", "fr", "fr-ca", "fr-fr", "it", "it-it", "ja", "ja-jp", "ko", "ko-kr", "nb-no", "nl", "nl-nl", "no", "pl", "pl-pl", "pt", "pt-br", "pt-pt", "ru", "ru-ru", "sv", "sv-se", "zh-chs", "zh-cht", "zh-cn", "zh-hk", "zh-tw"],
+
+		/**
 		 * A string array containing the friendly language names of the
 		 * passed languageCodes retrieved on 2014-09-28).
 		 *
@@ -51,16 +59,20 @@ window.microsoft = (function( microsoft, $ ) {
 		 * @param {string} endpoint
 		 * the api endpoint
 		 *
-		 * @param {string} callback
-		 * the name of the callback function
-		 *
 		 * @param {string} options
 		 * properly encoded query string parameters relevant to the api endpoint
 		 */
-		function callApi( endpoint, callback, options ) {
+		function callApi( endpoint, options ) {
 			var s = document.createElement("script");
-			s.src = endpoint + '?' + 'oncomplete=' + callback + options;
+			s.src = endpoint + '?' + 'oncomplete=microsoft.translator.callback' + options;
 			document.getElementsByTagName("head")[0].appendChild(s);
+		}
+
+		/**
+		 * @returns {bool}
+		 */
+		function online() {
+			return navigator.onLine || false;
 		}
 
 		/**
@@ -91,19 +103,109 @@ window.microsoft = (function( microsoft, $ ) {
 		 * @param {object} options
 		 * options to be validated
 		 *
-		 * @param {array} required
+		 * @param {array} requirements
 		 * the required options that should be present
+		 *
+		 * @example requirements
+			 {
+			  'default': 'default string',
+			  'empty': false,
+			  'option': 'appId',
+			  'required': true,
+			  'type': 'string'
+			 }
 		 */
-		function validateOptions( method, options, required ) {
-				if ( !options ) {
-					throw new Error( method + ', parameter options is required' );
+		function validateOptions( method, options, requirements ) {
+			var
+			error_msg_prefix = '';
+
+			$.each( requirements, function() {
+				error_msg_prefix = method + ', parameter options.' + this.option;
+
+				// option not defined attempt to set it to default
+				if ( options[this.option] === undefined ) {
+
+					// is option required
+					// is this.required truthy
+					if ( this.required ) {
+						if ( this['default'] === undefined ) {
+							throw new Error( error_msg_prefix + ' was not provided yet it is required and no default value was provided' );
+						}
+					}
+
+					// can option be empty
+					// is this.empty falsy
+					if ( !this.empty ) {
+						if ( this['default'] === undefined ) {
+							throw new Error( error_msg_prefix + ' was not provided yet it cannot be empty and no default value was provided' );
+						}
+					}
+
+					// set option with default
+					options[this.option] = this['default'];
 				}
 
-			$.each( required, function() {
-				if ( !options[this.option] ) {
-					throw new Error( method + ', parameter options.' + this.option + ' is required' );
+				switch ( this.type ) {
+					case 'array':
+						// is option an array
+						if ( !$.isArray( options[this.option] ) ) {
+							throw new Error( error_msg_prefix + ' is not an array' );
+						}
+
+						// is option an empty array
+						if ( !this.empty && options[this.option].length < 1 ) {
+							throw new Error( error_msg_prefix + ' must contain at least one array element' );
+						}
+
+						break;
+
+					case 'function':
+						// is option a function
+						if ( !$.isFunction( options[this.option] ) ) {
+							throw new Error( error_msg_prefix + ' is not a function' );
+						}
+
+						break;
+
+					case 'object':
+						// not defined and not required
+						if ( options[this.option] === undefined && this.empty ) {
+							break;
+						}
+
+						// is option an object
+						if ( !$.isPlainObject( options[this.option] ) ) {
+							throw new Error( error_msg_prefix + ' is not an object' );
+						}
+
+						// is option an empty object
+						if ( !this.empty && $.isEmptyObject( options[this.option] ) ) {
+							throw new Error( error_msg_prefix + ' must contain at least one element' );
+						}
+
+						break;
+
+					case 'string':
+						// not defined and not required
+						if ( options[this.option] === undefined && this.empty ) {
+							break;
+						}
+
+						// is option a string
+						if ( typeof options[this.option] !== 'string' ) {
+							throw new Error( error_msg_prefix + ' is not a string' );
+						}
+
+						// is option an empty string
+						if ( !this.empty && options[this.option].length < 1 ) {
+							throw new Error( error_msg_prefix + ' cannot be an empty string' );
+						}
+
+						break;
 				}
 			});
+
+			return options;
 		}
 
 		/**
@@ -119,6 +221,10 @@ window.microsoft = (function( microsoft, $ ) {
 		 *
 		 * @param {string} options.appId
 		 * A string containing "Bearer" + " " + access token.
+		 * (required)
+		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
 		 * (required)
 		 *
 		 * @param {string} options.category
@@ -183,21 +289,12 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
-		 * @param {array} options.translations
-		 * An array of translations to add to translation memory.
-		 * Each translation must contain: originalText, translatedText, rating.
-		 * The size of each originalText and translatedText is limited to 1000 chars.
-		 * The total of all the originalText(s) and translatedText(s) must not
-		 * exceed 10000 characters. The maximum number of array elements is 100.
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
 		 * (required)
 		 *
 		 * @param {string} options.from
 		 * A string containing the language code of the source language.
-		 * Must be a valid culture name.
-		 * (required)
-		 *
-		 * @param {string} options.to
-		 * A string containing the language code of the target language.
 		 * Must be a valid culture name.
 		 * (required)
 		 *
@@ -214,6 +311,19 @@ window.microsoft = (function( microsoft, $ ) {
 		 * (optional)
 		 *
 		 * @param {object} options.options.user
+		 * (required)
+		 *
+		 * @param {string} options.to
+		 * A string containing the language code of the target language.
+		 * Must be a valid culture name.
+		 * (required)
+		 *
+		 * @param {array} options.translations
+		 * An array of translations to add to translation memory.
+		 * Each translation must contain: originalText, translatedText, rating.
+		 * The size of each originalText and translatedText is limited to 1000 chars.
+		 * The total of all the originalText(s) and translatedText(s) must not
+		 * exceed 10000 characters. The maximum number of array elements is 100.
 		 * (required)
 		 */
 		translator.addTranslationArray = function( options ) {
@@ -236,13 +346,17 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
-		 * @param {string} options.text
-		 * A string representing the text to split into sentences.
-		 * The size of the text must not exceed 10000 characters.
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
 		 * (required)
 		 *
 		 * @param {string} options.language
 		 * A string representing the language code of input text.
+		 * (required)
+		 *
+		 * @param {string} options.text
+		 * A string representing the text to split into sentences.
+		 * The size of the text must not exceed 10000 characters.
 		 * (required)
 		 *
 		 * @returns {array}
@@ -251,8 +365,54 @@ window.microsoft = (function( microsoft, $ ) {
 		 * are the length of each sentence.
 		 */
 		translator.breakSentences = function( options ) {
-			var result = [];
-			console.log( 'microsoft.translator.breakSentences not yet implemented' );
+			var
+			query_params = '',
+			result = [];
+
+			if ( !online() ) {
+				return false;
+			}
+
+			options = validateOptions(
+				'microsoft.translator.breakSentences',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'option': 'language',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'text',
+						'required': true,
+						'type': 'string'
+					}
+				]
+			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&language=' + encodeURIComponent( options.language );
+			query_params += '&text=' + encodeURIComponent( options.text );
+
+			this.callback = function( response ) {
+				options.callback.call( this, response );
+			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/BreakSentences',
+				query_params
+			);
+
 			return result;
 		};
 
@@ -281,6 +441,10 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
+		 * (required)
+		 *
 		 * @param {string} options.text
 		 * A string representing the text from an unknown language.
 		 * The size of the text must not exceed 10000 characters.
@@ -290,8 +454,48 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing a two-character Language code for the given text.
 		 */
 		translator.detect = function( options ) {
-			var result = '';
-			console.log( 'microsoft.translator.detect not yet implemented' );
+			var
+			query_params = '',
+			result = '';
+
+			if ( !online() ) {
+				return false;
+			}
+
+			options = validateOptions(
+				'microsoft.translator.detect',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'option': 'text',
+						'required': true,
+						'type': 'string'
+					}
+				]
+			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&text=' + encodeURIComponent( options.text );
+
+			this.callback = function( response ) {
+				options.callback.call( this, response );
+			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/Detect',
+				query_params
+			);
+
 			return result;
 		};
 
@@ -312,6 +516,10 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
+		 * (required)
+		 *
 		 * @param {array} options.texts
 		 * A string array representing the text from an unknown language.
 		 * The size of the text must not exceed 10000 characters.
@@ -322,8 +530,48 @@ window.microsoft = (function( microsoft, $ ) {
 		 * of the input array.
 		 */
 		translator.detectArray = function( options ) {
-			var result = [];
-			console.log( 'microsoft.translator.detectArray not yet implemented' );
+			var
+			query_params = '',
+			result = [];
+
+			if ( !online() ) {
+				return false;
+			}
+
+			options = validateOptions(
+				'microsoft.translator.detectArray',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'option': 'texts',
+						'required': true,
+						'type': 'array'
+					}
+				]
+			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&texts=' + encodeURIComponent( options.texts );
+
+			this.callback = function( response ) {
+				options.callback.call( this, response );
+			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/DetectArray',
+				query_params
+			);
+
 			return result;
 		};
 
@@ -364,29 +612,56 @@ window.microsoft = (function( microsoft, $ ) {
 		 * passed languageCodes.
 		 */
 		translator.getLanguageNames = function( options ) {
-			var result = [];
+			var
+			query_params = '',
+			result = [];
 
-			if ( !$.isFunction( options.callback ) ) {
-				throw new Error( 'microsoft.translator.getLanguageNames options.callback is not a function' );
+			if ( !online() ) {
+				return false;
 			}
 
-			if ( !options.locale ) {
-				options.locale = 'en';
-			}
-
-			if ( !options.languageCodes ) {
-				options.languageCodes = JSON.stringify( languageCodes );
-			}
-
-			callApi(
-				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguageNames',
-				'microsoft.translator.callback',
-				'&appId=Bearer ' + encodeURIComponent( options.appId ) + '&locale=' + options.locale + '&languageCodes=' + options.languageCodes
+			options = validateOptions(
+				'microsoft.translator.detect',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'default': languageCodes,
+						'empty': true,
+						'option': 'languageCodes',
+						'required': false,
+						'type': 'array'
+					},
+					{
+						'default': 'en',
+						'option': 'locale',
+						'required': true,
+						'type': 'string'
+					}
+				]
 			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&languageCodes=' + JSON.stringify( options.languageCodes );
+			query_params += '&locale=' + encodeURIComponent( options.locale );
 
 			this.callback = function( response ) {
 				options.callback.call( this, response );
 			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguageNames',
+				query_params
+			);
 
 			return result;
 		};
@@ -406,13 +681,51 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
+		 * (required)
+		 *
 		 * @returns {array}
 		 * A string array containing the language codes supported for speech
 		 * synthesis by the Translator Services.
 		 */
 		translator.getLanguagesForSpeak = function( options ) {
-			var result = [];
-			console.log( 'microsoft.translator.getLanguagesForSpeak not yet implemented' );
+			var
+			query_params = '',
+			result = [];
+
+			if ( !online() ) {
+				return false;
+			}
+
+			options = validateOptions(
+				'microsoft.translator.getLanguagesForSpeak',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					}
+				]
+			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+
+			this.callback = function( response ) {
+				options.callback.call( this, response );
+			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForSpeak',
+				query_params
+			);
+
 			return result;
 		};
 
@@ -443,21 +756,41 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.getLanguagesForTranslate = function( options ) {
 			var
+			query_params = '',
 			result = [];
 
-			if ( !$.isFunction( options.callback ) ) {
-				throw new Error( 'microsoft.translator.getLanguagesForTranslate options.callback is not a function' );
+			if ( !online() ) {
+				return false;
 			}
 
-			callApi(
-				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForTranslate',
-				'microsoft.translator.callback',
-				'&appId=Bearer ' + encodeURIComponent( options.appId )
+			options = validateOptions(
+				'microsoft.translator.getLanguagesForTranslate',
+				options,
+				[
+					{
+						'empty': false,
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					}
+				]
 			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
 
 			this.callback = function( response ) {
 				options.callback.call( this, response );
 			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForTranslate',
+				query_params
+			);
 
 			return result;
 		};
@@ -477,6 +810,10 @@ window.microsoft = (function( microsoft, $ ) {
 		 *
 		 * @param {string} options.appId
 		 * A string containing "Bearer" + " " + access token.
+		 * (required)
+		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
 		 * (required)
 		 *
 		 * @param {string} options.from
@@ -591,6 +928,10 @@ window.microsoft = (function( microsoft, $ ) {
 		 *
 		 * @param {string} options.appId
 		 * A string containing "Bearer" + " " + access token.
+		 * (required)
+		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
 		 * (required)
 		 *
 		 * @param {string} options.from
@@ -709,6 +1050,10 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
+		 * (required)
+		 *
 		 * @param {string} options.format
 		 * A string specifying the content-type ID. Currently, “audio/wav” and
 		 * “audio/mp3” are available. The default value is "audio/wav".
@@ -718,6 +1063,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string representing the supported language code to speak the text in.
 		 * The code must be present in the list of codes returned from
 		 * the method GetLanguagesForSpeak.
+		 * (required)
 		 *
 		 * @param {string} options.options
 		 * A string specifying the quality of the audio signals. Currently,
@@ -738,8 +1084,77 @@ window.microsoft = (function( microsoft, $ ) {
 		 * passed-in text being spoken in the desired language.
 		 */
 		translator.speak = function( options ) {
-			var result = '';
-			console.log( 'microsoft.translator.speak not yet implemented' );
+			var
+			query_params = '',
+			result = '';
+
+			if ( !online() ) {
+				return false;
+			}
+
+			options = validateOptions(
+				'microsoft.translator.speak',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'empty': true,
+						'option': 'format',
+						'required': false,
+						'type': 'string'
+					},
+					{
+						'default': 'en',
+						'option': 'language',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'empty': true,
+						'option': 'options',
+						'required': false,
+						'type': 'object'
+					},
+					{
+						'option': 'text',
+						'required': true,
+						'type': 'string'
+					}
+				]
+			);
+
+			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&language=' + options.language;
+			query_params += '&text=' + options.text;
+
+			// optional parameter format
+			if ( options.format ) {
+				query_params += '&format=' + options.format;
+			}
+
+			// optional parameter options
+			if ( options.options ) {
+				query_params += '&options=' + options.options;
+			}
+
+			this.callback = function( response ) {
+				options.callback.call( this, response );
+			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/Speak',
+				query_params
+			);
+
 			return result;
 		};
 
@@ -801,40 +1216,79 @@ window.microsoft = (function( microsoft, $ ) {
 			query_params = '',
 			result = '';
 
-			if ( !$.isFunction( options.callback ) ) {
-				throw new Error( 'microsoft.translator.getLanguageNames options.callback is not a function' );
+			if ( !online() ) {
+				return false;
 			}
 
-			if ( !options.contentType ) {
-				options.contentType = 'text/plain';
-			}
-
-			if ( options.from ) {
-				query_params += '&from=' + options.from;
-			}
-
-			if ( !options.to ) {
-				options.to = 'en';
-			}
-
-			if ( !options.languageCodes ) {
-				options.languageCodes = JSON.stringify( languageCodes );
-			}
+			options = validateOptions(
+				'microsoft.translator.translate',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'empty': true,
+						'option': 'category',
+						'required': false,
+						'type': 'string'
+					},
+					{
+						'default': 'text/plain',
+						'option': 'contentType',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'empty': true,
+						'option': 'from',
+						'required': false,
+						'type': 'string'
+					},
+					{
+						'option': 'text',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'default': 'en',
+						'option': 'to',
+						'required': true,
+						'type': 'string'
+					}
+				]
+			);
 
 			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
 			query_params += '&contentType=' + options.contentType;
 			query_params += '&text=' + options.text;
 			query_params += '&to=' + options.to;
 
-			callApi(
-				'http://api.microsofttranslator.com/V2/Ajax.svc/Translate',
-				'microsoft.translator.callback',
-				query_params
-			);
+			// optional parameter category
+			if ( options.category ) {
+				query_params += '&category ' + options.category;
+			}
+
+			// optional parameter from
+			if ( options.from ) {
+				query_params += '&from=' + options.from;
+			}
 
 			this.callback = function( response ) {
 				options.callback.call( this, response );
 			};
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/Translate',
+				query_params
+			);
 
 			return result;
 		};
@@ -853,6 +1307,11 @@ window.microsoft = (function( microsoft, $ ) {
 		 * @param {string} options.appId
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
+		 *
+		 * @param {string} options.category
+		 * A string containing the category (domain) of the translation.
+		 * Defaults to "general".
+		 * (optional)
 		 *
 		 * @param {string} options.from
 		 * A string representing the language code of the translation text. If left
@@ -921,7 +1380,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.translateArray = function( options ) {
 			var result = '';
-			console.log( 'microsoft.translator.translate not yet implemented' );
+			console.log( 'microsoft.translator.translateArray not yet implemented' );
 			return result;
 		};
 
