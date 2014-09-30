@@ -59,12 +59,18 @@ window.microsoft = (function( microsoft, $ ) {
 		 * @param {string} endpoint
 		 * the api endpoint
 		 *
+		 * @param {string} callback
+		 * the name of the callback method
+		 *
 		 * @param {string} options
 		 * properly encoded query string parameters relevant to the api endpoint
 		 */
-		function callApi( endpoint, options ) {
+		function callApi( endpoint, callback, options ) {
 			var s = document.createElement("script");
-			s.src = endpoint + '?' + 'oncomplete=microsoft.translator.callback' + options;
+			s.src =
+				endpoint + '?' +
+				'oncomplete=' + callback +
+				options;
 			document.getElementsByTagName("head")[0].appendChild(s);
 		}
 
@@ -73,6 +79,18 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		function online() {
 			return navigator.onLine || false;
+		}
+
+		/**
+		 * @param {function} callback
+		 *
+		 * @returns {int}
+		 * new length of the microsoft.translator.callbacks array
+		 */
+		function setCallback( callback ) {
+			return microsoft.translator.callbacks.push( function( response ) {
+				callback.call( microsoft.translator, response );
+			});
 		}
 
 		/**
@@ -366,6 +384,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.breakSentences = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = [];
 
@@ -400,16 +419,15 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 			query_params += '&language=' + encodeURIComponent( options.language );
 			query_params += '&text=' + encodeURIComponent( options.text );
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/BreakSentences',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -417,14 +435,9 @@ window.microsoft = (function( microsoft, $ ) {
 		};
 
 		/**
-		 * A default callback method.
-		 * This should be replaced by a specific callback handler per api request
-		 *
-		 * @param {string} response
+		 * @type {array}
 		 */
-		translator.callback = function( response ) {
-			return response;
-		};
+		translator.callbacks = [];
 
 		/**
 		 * Detect Method
@@ -455,6 +468,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.detect = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = '';
 
@@ -484,15 +498,14 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 			query_params += '&text=' + encodeURIComponent( options.text );
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Detect',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -531,6 +544,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.detectArray = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = [];
 
@@ -560,15 +574,14 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
-			query_params += '&texts=' + encodeURIComponent( options.texts );
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
+			query_params += '&texts=' + encodeURIComponent( JSON.stringify( options.texts ) );
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/DetectArray',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -613,6 +626,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.getLanguageNames = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = [];
 
@@ -650,16 +664,15 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
-			query_params += '&languageCodes=' + JSON.stringify( options.languageCodes );
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
+			query_params += '&languageCodes=' + encodeURIComponent( JSON.stringify( options.languageCodes ) );
 			query_params += '&locale=' + encodeURIComponent( options.locale );
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguageNames',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -691,6 +704,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.getLanguagesForSpeak = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = [];
 
@@ -715,14 +729,13 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForSpeak',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -756,6 +769,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.getLanguagesForTranslate = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = [];
 
@@ -781,14 +795,13 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForTranslate',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -1085,6 +1098,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.speak = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = '';
 
@@ -1122,7 +1136,7 @@ window.microsoft = (function( microsoft, $ ) {
 						'empty': true,
 						'option': 'options',
 						'required': false,
-						'type': 'object'
+						'type': 'string'
 					},
 					{
 						'option': 'text',
@@ -1132,26 +1146,25 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
-			query_params += '&language=' + options.language;
-			query_params += '&text=' + options.text;
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
+			query_params += '&language=' + encodeURIComponent( options.language );
+			query_params += '&text=' + encodeURIComponent( options.text );
 
 			// optional parameter format
 			if ( options.format ) {
-				query_params += '&format=' + options.format;
+				query_params += '&format=' + encodeURIComponent( options.format );
 			}
 
 			// optional parameter options
 			if ( options.options ) {
-				query_params += '&options=' + options.options;
+				query_params += '&options=' + encodeURIComponent( options.options );
 			}
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Speak',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -1213,6 +1226,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.translate = function( options ) {
 			var
+			callback_index = 0,
 			query_params = '',
 			result = '';
 
@@ -1266,27 +1280,26 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
-			query_params += '&appId=Bearer ' + encodeURIComponent( options.appId );
-			query_params += '&contentType=' + options.contentType;
-			query_params += '&text=' + options.text;
-			query_params += '&to=' + options.to;
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
+			query_params += '&contentType=' + encodeURIComponent( options.contentType );
+			query_params += '&text=' + encodeURIComponent( options.text );
+			query_params += '&to=' + encodeURIComponent( options.to );
 
 			// optional parameter category
 			if ( options.category ) {
-				query_params += '&category ' + options.category;
+				query_params += '&category=' + encodeURIComponent( options.category );
 			}
 
 			// optional parameter from
 			if ( options.from ) {
-				query_params += '&from=' + options.from;
+				query_params += '&from=' + encodeURIComponent( options.from );
 			}
 
-			this.callback = function( response ) {
-				options.callback.call( this, response );
-			};
+			callback_index = setCallback( options.callback ) - 1;
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Translate',
+				'microsoft.translator.callbacks[' + callback_index + ']',
 				query_params
 			);
 
@@ -1308,17 +1321,16 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string containing "Bearer" + " " + access token.
 		 * (required)
 		 *
-		 * @param {string} options.category
-		 * A string containing the category (domain) of the translation.
-		 * Defaults to "general".
-		 * (optional)
+		 * @param {function} options.callback
+		 * A function that will handle the promised return value from the api
+		 * (required)
 		 *
 		 * @param {string} options.from
-		 * A string representing the language code of the translation text. If left
-		 * empty the response will include the result of language auto-detection.
+		 * A string representing the language code of the translation text.
+		 * If left empty the response will include the result of language auto-detection.
 		 * (optional)
 		 *
-		 * @param {string} options.options
+		 * @param {object} options.options
 		 * A TranslateOptions element containing the values below. They are all
 		 * optional and default to the most common settings.
 		 *
@@ -1379,8 +1391,77 @@ window.microsoft = (function( microsoft, $ ) {
 		 * content as in the request.
 		 */
 		translator.translateArray = function( options ) {
-			var result = '';
-			console.log( 'microsoft.translator.translateArray not yet implemented' );
+			var
+			callback_index = 0,
+			query_params = '',
+			result = '';
+
+			if ( !online() ) {
+				return false;
+			}
+
+			options = validateOptions(
+				'microsoft.translator.translate',
+				options,
+				[
+					{
+						'option': 'appId',
+						'required': true,
+						'type': 'string'
+					},
+					{
+						'option': 'callback',
+						'required': true,
+						'type': 'function'
+					},
+					{
+						'empty': true,
+						'option': 'from',
+						'required': false,
+						'type': 'string'
+					},
+					{
+						'empty': true,
+						'options': 'options',
+						'required': false,
+						'type': 'object'
+					},
+					{
+						'option': 'texts',
+						'required': true,
+						'type': 'array'
+					},
+					{
+						'default': 'en',
+						'option': 'to',
+						'required': true,
+						'type': 'string'
+					}
+				]
+			);
+
+			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
+			query_params += '&texts=' + encodeURIComponent( JSON.stringify( options.texts ) );
+			query_params += '&to=' + encodeURIComponent( options.to );
+
+			// optional parameter from
+			if ( options.from ) {
+				query_params += '&from=' + encodeURIComponent( options.from );
+			}
+
+			// optional parameter category
+			if ( options.options ) {
+				query_params += '&options=' + encodeURIComponent( JSON.stringify( options.options ) );
+			}
+
+			callback_index = setCallback( options.callback ) - 1;
+
+			callApi(
+				'http://api.microsofttranslator.com/V2/Ajax.svc/Translate',
+				'microsoft.translator.callbacks[' + callback_index + ']',
+				query_params
+			);
+
 			return result;
 		};
 
