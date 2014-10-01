@@ -45,6 +45,4 @@
 			);
 	}
 	microsoft.translator.speak( options );
-
-
 }());

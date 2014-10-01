@@ -1,6 +1,17 @@
 /*global console, jQuery, microsoft */
 /*jslint browser: true, white: true */
 /**
+ * microsoft.translator
+ * @see https://github.com/dan-nl/microsoft.translator
+ *
+ * @version 0.0.1
+ * @author dan entous
+ *
+ * released under the MIT license
+ * @see https://github.com/dan-nl/microsoft.translator/blob/master/LICENSE.md
+ * © 2014 dan entous
+ */
+/**
  * AJAX
  *
  * To start using the AJAX interface for the Microsoft Translator service all
@@ -97,23 +108,8 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A method for making sure that options passed to a function contain the
 		 * expected, required, typed options.
 		 *
-		 * @todo find a library/plugin/method for jQuery that already handles this.
-		 * leaving this here as a current method for handling parameter validation
-		 * though this is definitely lacking in functionality.
-		 *
-		 * @example
-		   validateOptions(
-				'addTranslation',
-				options,
-				[
-					{ 'option': 'appId' },
-					{ 'option': 'from' },
-					{ 'option': 'originalText' },
-					{ 'option': 'to' },
-					{ 'option': 'translatedText' },
-					{ 'option': 'user' }
-				]
-			);
+		 * @todo wonder if a library/plugin/method for jQuery exists that already
+		 * handles this.
 		 *
 		 * @param {method} method
 		 * the name of the calling method
@@ -132,6 +128,9 @@ window.microsoft = (function( microsoft, $ ) {
 			  'required': true,
 			  'type': 'string'
 			 }
+		 *
+		 * @returns {object}
+		 * a validated options object
 		 */
 		function validateOptions( method, options, requirements ) {
 			var
