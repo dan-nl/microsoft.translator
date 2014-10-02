@@ -4,7 +4,7 @@
  * microsoft.translator
  * @see https://github.com/dan-nl/microsoft.translator
  *
- * @version 0.0.1
+ * @version 0.0.2
  * @author dan entous
  *
  * released under the MIT license
@@ -41,10 +41,20 @@ window.microsoft = (function( microsoft, $ ) {
 
 		var
 		/**
+		 * @type {int}
+		 */
+		api_error_count = 0,
+
+		/**
+		 * @type {bool}
+		 */
+		debug_on = false,
+
+		/**
 		 * A string array containing the language codes supported by
 		 * the Translator Services (retrieved on 2014-09-28).
 		 *
-		 * @type array
+		 * @type {array}
 		 */
 		languageCodes = ["ar", "bg", "ca", "zh-CHS", "zh-CHT", "cs", "da", "nl", "en", "et", "fi", "fr", "de", "el", "ht", "he", "hi", "mww", "hu", "id", "it", "ja", "tlh", "tlh-Qaak", "ko", "lv", "lt", "ms", "mt", "no", "fa", "pl", "pt", "ro", "ru", "sk", "sl", "es", "sv", "th", "tr", "uk", "ur", "vi", "cy"],
 
@@ -52,7 +62,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string array containing the language codes supported for speech
 		 * synthesis by the Translator Services (retrieved on 2014-09-28).
 		 *
-		 * @type array
+		 * @type {array}
 		 */
 		languagesForSpeak = ["ca", "ca-es", "da", "da-dk", "de", "de-de", "en", "en-au", "en-ca", "en-gb", "en-in", "en-us", "es", "es-es", "es-mx", "fi", "fi-fi", "fr", "fr-ca", "fr-fr", "it", "it-it", "ja", "ja-jp", "ko", "ko-kr", "nb-no", "nl", "nl-nl", "no", "pl", "pl-pl", "pt", "pt-br", "pt-pt", "ru", "ru-ru", "sv", "sv-se", "zh-chs", "zh-cht", "zh-cn", "zh-hk", "zh-tw"],
 
@@ -60,11 +70,52 @@ window.microsoft = (function( microsoft, $ ) {
 		 * A string array containing the friendly language names of the
 		 * passed languageCodes retrieved on 2014-09-28).
 		 *
-		 * @type object
+		 * @type {object}
 		 */
 		languageNames = {
 			'en': ["Arabic", "Bulgarian", "Catalan", "Chinese Simplified", "Chinese Traditional", "Czech", "Danish", "Dutch", "English", "Estonian", "Finnish", "French", "German", "Greek", "Haitian Creole", "Hebrew", "Hindi", "Hmong Daw", "Hungarian", "Indonesian", "Italian", "Japanese", "Klingon", "Klingon (pIqaD)", "Korean", "Latvian", "Lithuanian", "Malay", "Maltese", "Norwegian", "Persian", "Polish", "Portuguese", "Romanian", "Russian", "Slovak", "Slovenian", "Spanish", "Swedish", "Thai", "Turkish", "Ukrainian", "Urdu", "Vietnamese", "Welsh"]
 		};
+
+		/**
+		 * @param {string} msg
+		 */
+		function debug( msg ) {
+			if ( debug_on && window.console && console.log ) {
+				console.log( msg );
+			}
+		}
+
+		/**
+		 * @param {string} data
+		 * @param {function} callback
+		 */
+		function handleApiDone( data, callback ) {
+			api_error_count = 0;
+			callback.call( translator, { status: 'success' }, data );
+		}
+
+		/**
+		 * as of 2015-10-01 the api returns invalid js for exceptions,
+		 * which are interpreted as parser errors
+		 *
+		 * @todo since there is no access to the actual invalid response text,
+		 * assume that the exception is an expired token and request
+		 * another token. only do this once if the current api_error_count = 0
+		 *
+		 * @param {string} textStatus
+		 * @param {function} callback
+		 */
+		function handleApiFail( textStatus, callback ) {
+			if ( textStatus === 'parsererror' && api_error_count < 1 ) {
+				api_error_count += 1;
+				// @todo getNewToken()
+			}
+
+			debug( 'there was a parser error interpreting the microsoft translator api response' );
+			debug( 'you can see the api response in the developer network console' );
+
+			callback.call( translator, { status: textStatus } );
+		}
 
 		/**
 		 * @param {string} endpoint
@@ -77,12 +128,24 @@ window.microsoft = (function( microsoft, $ ) {
 		 * properly encoded query string parameters relevant to the api endpoint
 		 */
 		function callApi( endpoint, callback, options ) {
-			var s = document.createElement("script");
-			s.src =
-				endpoint + '?' +
-				'oncomplete=' + callback +
-				options;
-			document.getElementsByTagName("head")[0].appendChild(s);
+			$.ajax({
+				data: options.substring( 1, options.length ),
+				dataType: 'jsonp',
+				jsonp: 'oncomplete',
+				url: endpoint
+			})
+
+			.done(function( data ) {
+				handleApiDone( data, callback );
+			})
+
+			.fail(function( jqXHR, textStatus ) {
+				handleApiFail( textStatus, callback );
+			});
+
+			//var s = document.createElement("script");
+			//s.src = endpoint + '?' + 'oncomplete=' + callback + options;
+			//document.getElementsByTagName("head")[0].appendChild(s);
 		}
 
 		/**
@@ -99,8 +162,8 @@ window.microsoft = (function( microsoft, $ ) {
 		 * new length of the microsoft.translator.callbacks array
 		 */
 		function setCallback( callback ) {
-			return microsoft.translator.callbacks.push( function( response ) {
-				callback.call( microsoft.translator, response );
+			return microsoft.translator.callbacks.push( function() {
+				callback.apply( microsoft.translator, arguments );
 			});
 		}
 
@@ -288,7 +351,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 * (required)
 		 */
 		translator.addTranslation = function( options ) {
-			console.log( 'microsoft.translator.addTranslation not yet implemented' );
+			debug( 'microsoft.translator.addTranslation not yet implemented' );
 		};
 
 		/**
@@ -344,7 +407,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 * (required)
 		 */
 		translator.addTranslationArray = function( options ) {
-			console.log( 'microsoft.translator.addTranslationArray not yet implemented' );
+			debug( 'microsoft.translator.addTranslationArray not yet implemented' );
 		};
 
 		/**
@@ -426,7 +489,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/BreakSentences',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -504,7 +567,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Detect',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -580,11 +643,19 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/DetectArray',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
 			return result;
+		};
+
+		translator.disableDebug = function() {
+			debug_on = false;
+		};
+
+		translator.enableDebug = function() {
+			debug_on = true;
 		};
 
 		/**
@@ -671,7 +742,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguageNames',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -734,7 +805,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForSpeak',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -800,7 +871,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/GetLanguagesForTranslate',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -922,7 +993,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.getTranslations = function( options ) {
 			var result = [];
-			console.log( 'microsoft.translator.getTranslations not yet implemented' );
+			debug( 'microsoft.translator.getTranslations not yet implemented' );
 			return result;
 		};
 
@@ -1042,7 +1113,7 @@ window.microsoft = (function( microsoft, $ ) {
 		 */
 		translator.getTranslationsArray = function( options ) {
 			var result = [];
-			console.log( 'microsoft.translator.getTranslationsArray not yet implemented' );
+			debug( 'microsoft.translator.getTranslationsArray not yet implemented' );
 			return result;
 		};
 
@@ -1163,7 +1234,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Speak',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -1298,7 +1369,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Translate',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
@@ -1457,7 +1528,7 @@ window.microsoft = (function( microsoft, $ ) {
 
 			callApi(
 				'http://api.microsofttranslator.com/V2/Ajax.svc/Translate',
-				'microsoft.translator.callbacks[' + callback_index + ']',
+				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
 
