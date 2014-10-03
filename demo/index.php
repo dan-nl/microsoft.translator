@@ -20,6 +20,6 @@ body { padding: 3%; }
 <body>
 <h1>microsoft.translator</h1>
 <script>var response_json = <?php echo $response_json; ?>, access_token_as_json = <?php echo $access_token_as_json; ?>;</script>
-<script src="/js/com/jquery/jquery-1.11.1.js"></script>
+<script src="js/jquery-1.11.1.min.js"></script>
+<script src="js/microsoft.translator.js"></script>
 <script src="js/translator.js"></script>
-<script src="js/app.js"></script>
