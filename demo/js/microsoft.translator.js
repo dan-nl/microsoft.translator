@@ -4,7 +4,7 @@
  * microsoft.translator
  * @see https://github.com/dan-nl/microsoft.translator
  *
- * @version 0.0.3
+ * @version 0.0.4
  * @author dan entous
  *
  * released under the MIT license
@@ -642,6 +642,24 @@ window.microsoft = (function( microsoft, $ ) {
 				microsoft.translator.callbacks[ callback_index ],
 				query_params
 			);
+
+			return result;
+		};
+
+		/**
+		 * @param {string} locale
+		 * @return {object}
+		 */
+		translator.getLanguageCodesAndNames = function( locale ) {
+			var
+			result = {};
+
+			if (
+				$.inArray( locale, languageCodes ) !== -1 &&
+				languageCodesAndNames[locale]
+			) {
+				result = languageCodesAndNames[locale];
+			}
 
 			return result;
 		};
