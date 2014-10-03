@@ -1,6 +1,6 @@
 microsoft.translator
 ====================
-initial draft
+a front-end implementation of the [Microsoft Translator Data](https://datamarket.azure.com/dataset/bing/microsofttranslator "Microsoft Translator Data") service.
 
 * currently implements the following api calls:
   * `breakSentences()`
@@ -12,4 +12,5 @@ initial draft
   * `speak()`
   * `translate()`
   * `translateArray()`
-* does not yet make a call for a new api token; for the moment it relies on the initial token response, which is good for 10 minutes.
+
+see the [AJAX API Reference](http://msdn.microsoft.com/en-us/library/ff512404.aspx "AJAX API Reference") for further details.
