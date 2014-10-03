@@ -4,7 +4,7 @@
  * microsoft.translator
  * @see https://github.com/dan-nl/microsoft.translator
  *
- * @version 0.0.2
+ * @version 0.0.3
  * @author dan entous
  *
  * released under the MIT license
@@ -57,13 +57,26 @@ window.microsoft = (function( microsoft, $ ) {
 		languagesForSpeak = ["ca", "ca-es", "da", "da-dk", "de", "de-de", "en", "en-au", "en-ca", "en-gb", "en-in", "en-us", "es", "es-es", "es-mx", "fi", "fi-fi", "fr", "fr-ca", "fr-fr", "it", "it-it", "ja", "ja-jp", "ko", "ko-kr", "nb-no", "nl", "nl-nl", "no", "pl", "pl-pl", "pt", "pt-br", "pt-pt", "ru", "ru-ru", "sv", "sv-se", "zh-chs", "zh-cht", "zh-cn", "zh-hk", "zh-tw"],
 
 		/**
-		 * A string array containing the friendly language names of the
-		 * passed languageCodes retrieved on 2014-09-28).
+		 * An object that contains static results of the language codes and
+		 * corresponding language names for a given language code
+		 * (retrieved on 2014-10-03).
 		 *
 		 * @type {object}
 		 */
-		languageNames = {
-			'en': ["Arabic", "Bulgarian", "Catalan", "Chinese Simplified", "Chinese Traditional", "Czech", "Danish", "Dutch", "English", "Estonian", "Finnish", "French", "German", "Greek", "Haitian Creole", "Hebrew", "Hindi", "Hmong Daw", "Hungarian", "Indonesian", "Italian", "Japanese", "Klingon", "Klingon (pIqaD)", "Korean", "Latvian", "Lithuanian", "Malay", "Maltese", "Norwegian", "Persian", "Polish", "Portuguese", "Romanian", "Russian", "Slovak", "Slovenian", "Spanish", "Swedish", "Thai", "Turkish", "Ukrainian", "Urdu", "Vietnamese", "Welsh"]
+		languageCodesAndNames = {
+			"da" : { "ar":"Arabisk", "bg":"Bulgarsk", "ca":"Catalansk", "zh-CHS":"Kinesisk, forenklet", "zh-CHT":"Kinesisk, traditionelt", "cs":"Tjekkisk", "da":"Dansk", "nl":"Nederlandsk", "en":"Engelsk", "et":"Estisk", "fi":"Finsk", "fr":"Fransk", "de":"Tysk", "el":"Græsk", "ht":"Haitiansk", "he":"Hebraisk", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Ungarsk", "id":"Indonesisk", "it":"Italiensk", "ja":"Japansk", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Koreansk", "lv":"Lettisk", "lt":"Litauisk", "ms":"Malaysisk", "mt":"Maltesisk", "no":"Norsk", "fa":"Persisk", "pl":"Polsk", "pt":"Portugisisk", "ro":"Rumænsk", "ru":"Russisk", "sk":"Slovakisk", "sl":"Slovensk", "es":"Spansk", "sv":"Svensk", "th":"Thai", "tr":"Tyrkisk", "uk":"Ukrainsk", "ur":"Urdu", "vi":"Vietnamesisk", "cy":"Walisisk" },
+			"de" : { "ar":"Arabisch", "bg":"Bulgarisch", "ca":"Katalanisch", "zh-CHS":"Chinesisch (Vereinfacht)", "zh-CHT":"Chinesisch (Traditionell)", "cs":"Tschechisch", "da":"Dänisch", "nl":"Niederländisch", "en":"Englisch", "et":"Estnisch", "fi":"Finnisch", "fr":"Französisch", "de":"Deutsch", "el":"Griechisch", "ht":"Haitianisch", "he":"Hebräisch", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Ungarisch", "id":"Indonesisch", "it":"Italienisch", "ja":"Japanisch", "tlh":"Klingonisch", "tlh-Qaak":"Klingonisch (pIqaD)", "ko":"Koreanisch", "lv":"Lettisch", "lt":"Litauisch", "ms":"Malaiisch", "mt":"Maltesisch", "no":"Norwegisch", "fa":"Persisch", "pl":"Polnisch", "pt":"Portugiesisch", "ro":"Rumänisch", "ru":"Russisch", "sk":"Slowakisch", "sl":"Slowenisch", "es":"Spanisch", "sv":"Schwedisch", "th":"Thailändisch", "tr":"Türkisch", "uk":"Ukrainisch", "ur":"Urdu", "vi":"Vietnamesisch", "cy":"Walisisch" },
+			"el" : { "ar":"Αραβικά", "bg":"Βουλγαρικά", "ca":"Καταλανικά", "zh-CHS":"Κινεζικά (Απ)", "zh-CHT":"Κινεζικά (Πα)", "cs":"Τσεχικά", "da":"Δανικά", "nl":"Ολλανδικά", "en":"Αγγλικά", "et":"Εσθονικά", "fi":"Φινλανδικά", "fr":"Γαλλικά", "de":"Γερμανικά", "el":"Ελληνικά", "ht":"γλώσσα Αϊτής", "he":"Εβραϊκά", "hi":"Χίντι", "mww":"Χμονγκ", "hu":"Ουγγρικά", "id":"Ινδονησιακά", "it":"Ιταλικά", "ja":"Ιαπωνικά", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Κορεατικά", "lv":"Λετονικά", "lt":"Λιθουανικά", "ms":"Μαλαϊκά", "mt":"Μαλτεζικά", "no":"Νορβηγικά", "fa":"Περσικά", "pl":"Πολωνικά", "pt":"Πορτογαλικά", "ro":"Ρουμανικά", "ru":"Ρωσικά", "sk":"Σλοβακικά", "sl":"Σλοβενικά", "es":"Ισπανικά", "sv":"Σουηδικά", "th":"Ταϊλανδικά", "tr":"Τουρκικά", "uk":"Ουκρανικά", "ur":"Ουρντού", "vi":"Βιετναμικά", "cy":"Ουαλλικά" },
+			"en" : { "ar":"Arabic", "bg":"Bulgarian", "ca":"Catalan", "zh-CHS":"Chinese Simplified", "zh-CHT":"Chinese Traditional", "cs":"Czech", "da":"Danish", "nl":"Dutch", "en":"English", "et":"Estonian", "fi":"Finnish", "fr":"French", "de":"German", "el":"Greek", "ht":"Haitian Creole", "he":"Hebrew", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Hungarian", "id":"Indonesian", "it":"Italian", "ja":"Japanese", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Korean", "lv":"Latvian", "lt":"Lithuanian", "ms":"Malay", "mt":"Maltese", "no":"Norwegian", "fa":"Persian", "pl":"Polish", "pt":"Portuguese", "ro":"Romanian", "ru":"Russian", "sk":"Slovak", "sl":"Slovenian", "es":"Spanish", "sv":"Swedish", "th":"Thai", "tr":"Turkish", "uk":"Ukrainian", "ur":"Urdu", "vi":"Vietnamese", "cy":"Welsh" },
+			"fr" : { "ar":"Arabe", "bg":"Bulgare", "ca":"Catalan", "zh-CHS":"Chinois simplifié", "zh-CHT":"Chinois traditionnel", "cs":"Tchèque", "da":"Danois", "nl":"Néerlandais", "en":"Anglais", "et":"Estonien", "fi":"Finnois", "fr":"Français", "de":"Allemand", "el":"Grec", "ht":"Haïtien", "he":"Hébreu", "hi":"Hindi", "mww":"Hmong daw", "hu":"Hongrois", "id":"Indonésien", "it":"Italien", "ja":"Japonais", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Coréen", "lv":"Letton", "lt":"Lituanien", "ms":"Malaisien", "mt":"Maltais", "no":"Norvégien", "fa":"Perse", "pl":"Polonais", "pt":"Portugais", "ro":"Roumain", "ru":"Russe", "sk":"Slovaque", "sl":"Slovène", "es":"Espagnol", "sv":"Suédois", "th":"Thaï", "tr":"Turc", "uk":"Ukrainien", "ur":"Urdu", "vi":"Vietnamien", "cy":"Gallois" },
+			"it" : { "ar":"Arabo", "bg":"Bulgaro", "ca":"Catalano", "zh-CHS":"Cinese semplificato", "zh-CHT":"Cinese tradizionale", "cs":"Ceco", "da":"Danese", "nl":"Olandese", "en":"Inglese", "et":"Estone", "fi":"Finlandese", "fr":"Francese", "de":"Tedesco", "el":"Greco", "ht":"Haitiano", "he":"Ebraico", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Ungherese", "id":"Indonesiano", "it":"Italiano", "ja":"Giapponese", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Coreano", "lv":"Lettone", "lt":"Lituano", "ms":"Malese", "mt":"Maltese", "no":"Norvegese", "fa":"Farsi", "pl":"Polacco", "pt":"Portoghese", "ro":"Rumeno", "ru":"Russo", "sk":"Slovacco", "sl":"Sloveno", "es":"Spagnolo", "sv":"Svedese", "th":"Tailandese", "tr":"Turco", "uk":"Ucraino", "ur":"Urdu", "vi":"Vietnamita", "cy":"Gallese" },
+			"hu" : { "ar":"Arab", "bg":"Bolgár", "ca":"Katalán", "zh-CHS":"Kínai (egyszerűsített)", "zh-CHT":"Kínai (hagyományos)", "cs":"Cseh", "da":"Dán", "nl":"Holland", "en":"Angol", "et":"Észt", "fi":"Finn", "fr":"Francia", "de":"Német", "el":"Görög", "ht":"Haiti kreol", "he":"Héber", "hi":"Hindi", "mww":"Hmong daw", "hu":"Magyar", "id":"Indonéz", "it":"Olasz", "ja":"Japán", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Koreai", "lv":"Lett", "lt":"Litván", "ms":"Maláj", "mt":"Máltai", "no":"Norvég", "fa":"Perzsa", "pl":"Lengyel", "pt":"Portugál", "ro":"Román", "ru":"Orosz", "sk":"Szlovák", "sl":"Szlovén", "es":"Spanyol", "sv":"Svéd", "th":"Thai", "tr":"Török", "uk":"Ukrán", "ur":"Urdu", "vi":"Vietnami", "cy":"Walesi" },
+			"nl" : { "ar":"Arabisch", "bg":"Bulgaars", "ca":"Catalaans", "zh-CHS":"Vereenvoudigd Chinees", "zh-CHT":"Traditioneel Chinees", "cs":"Tsjechisch", "da":"Deens", "nl":"Nederlands", "en":"Engels", "et":"Estisch", "fi":"Fins", "fr":"Frans", "de":"Duits", "el":"Grieks", "ht":"Haïtiaans", "he":"Hebreeuws", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Hongaars", "id":"Indonesisch", "it":"Italiaans", "ja":"Japans", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Koreaans", "lv":"Lets", "lt":"Litouws", "ms":"Maleis", "mt":"Maltees", "no":"Noors", "fa":"Perzisch", "pl":"Pools", "pt":"Portugees", "ro":"Roemeens", "ru":"Russisch", "sk":"Slowaaks", "sl":"Sloveens", "es":"Spaans", "sv":"Zweeds", "th":"Thais", "tr":"Turks", "uk":"Oekraïens", "ur":"Urdu", "vi":"Vietnamees", "cy":"Welsh" },
+			"pl" : { "ar":"Arabski", "bg":"Bułgarski", "ca":"Kataloński", "zh-CHS":"Chiński uproszczony", "zh-CHT":"Chiński tradycyjny", "cs":"Czeski", "da":"Duński", "nl":"Holenderski", "en":"Angielski", "et":"Estoński", "fi":"Fiński", "fr":"Francuski", "de":"Niemiecki", "el":"Grecki", "ht":"Haitański", "he":"Hebrajski", "hi":"Hindi", "mww":"Hmong daw", "hu":"Węgierski", "id":"Indonezyjski", "it":"Włoski", "ja":"Japoński", "tlh":"Klingoński", "tlh-Qaak":"Klingoński (pIqaD)", "ko":"Koreański", "lv":"Łotewski", "lt":"Litewski", "ms":"Malajski", "mt":"Maltański", "no":"Norweski", "fa":"Perski", "pl":"Polski", "pt":"Portugalski", "ro":"Rumuński", "ru":"Rosyjski", "sk":"Słowacki", "sl":"Słoweński", "es":"Hiszpański", "sv":"Szwedzki", "th":"Tajski", "tr":"Turecki", "uk":"Ukraiński", "ur":"Urdu", "vi":"Wietnamski", "cy":"Walijski" },
+			"pt" : { "ar":"Árabe", "bg":"Búlgaro", "ca":"Catalão", "zh-CHS":"Chinês simplificado", "zh-CHT":"Chinês tradicional", "cs":"Tcheco", "da":"Dinamarquês", "nl":"Holandês", "en":"Inglês", "et":"Estoniano", "fi":"Finlandês", "fr":"Francês", "de":"Alemão", "el":"Grego", "ht":"Haitiano", "he":"Hebraico", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Húngaro", "id":"Indonésio", "it":"Italiano", "ja":"Japonês", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Coreano", "lv":"Letão", "lt":"Lituano", "ms":"Malaio", "mt":"Maltês", "no":"Norueguês", "fa":"Persa", "pl":"Polonês", "pt":"Português", "ro":"Romeno", "ru":"Russo", "sk":"Eslovaco", "sl":"Esloveno", "es":"Espanhol", "sv":"Sueco", "th":"Tailandês", "tr":"Turco", "uk":"Ucraniano", "ur":"Urdu", "vi":"Vietnamita", "cy":"Galês" },
+			"ro" : { "ar":"Arabă", "bg":"Bulgară", "ca":"Catalană", "zh-CHS":"Chineză simplificată", "zh-CHT":"Chineză tradiţională", "cs":"Cehă", "da":"Daneză", "nl":"Olandeză", "en":"Engleză", "et":"Estonă", "fi":"Finlandeză", "fr":"Franceză", "de":"Germană", "el":"Greacă", "ht":"Creolă haitiană", "he":"Ebraică", "hi":"Hindi", "mww":"Hmong Daw", "hu":"Maghiară", "id":"Indoneziană", "it":"Italiană", "ja":"Japoneză", "tlh":"Klingoniană", "tlh-Qaak":"Klingoniană (pIqaD)", "ko":"Coreeană", "lv":"Letonă", "lt":"Lituaniană", "ms":"Malaieză", "mt":"Malteză", "no":"Norvegiană", "fa":"Persană", "pl":"Poloneză", "pt":"Portugheză", "ro":"Română", "ru":"Rusă", "sk":"Slovacă", "sl":"Slovenă", "es":"Spaniolă", "sv":"Suedeză", "th":"Thai", "tr":"Turcă", "uk":"Ucraineană", "ur":"Urdu", "vi":"Vietnameză", "cy":"Velşă" },
+			"sk" : { "ar":"Arabčina", "bg":"Bulharčina", "ca":"Katalánčina", "zh-CHS":"Čínština (zjednodušená)", "zh-CHT":"Čínština (tradičná)", "cs":"Čeština", "da":"Dánčina", "nl":"Holandčina", "en":"Angličtina", "et":"Estónčina", "fi":"Fínčina", "fr":"Francúzština", "de":"Nemčina", "el":"Gréčtina", "ht":"Haitská kreolčina", "he":"Hebrejčina", "hi":"Hindčina", "mww":"Hmong daw", "hu":"Maďarčina", "id":"Indonézština", "it":"Taliančina", "ja":"Japončina", "tlh":"Klingonèina", "tlh-Qaak":"Klingonèina (pIqaD)", "ko":"Kórejčina", "lv":"Lotyština", "lt":"Litovčina", "ms":"Malajčina", "mt":"Maltčina", "no":"Nórčina", "fa":"Perzština", "pl":"Poľština", "pt":"Portugalčina", "ro":"Rumunčina", "ru":"Ruština", "sk":"Slovenčina", "sl":"Slovinčina", "es":"Španielčina", "sv":"Švédčina", "th":"Thajčina", "tr":"Turečtina", "uk":"Ukrajinčina", "ur":"Urdčina", "vi":"Xietnamčina", "cy":"Waleština" },
+			"sl" : { "ar":"Arabščina", "bg":"Bolgarščina", "ca":"Katalonščina", "zh-CHS":"Poenostavljena kitajščina", "zh-CHT":"Tradicionalna kitajščina", "cs":"Češčina", "da":"Danščina", "nl":"Nizozemščina", "en":"Angleščina", "et":"Estonščina", "fi":"Finščina", "fr":"Francoščina", "de":"Nemščina", "el":"Grščina", "ht":"Kreolščina (Haiti)", "he":"Hebrejščina", "hi":"Hindijščina", "mww":"Hmong Daw", "hu":"Madžarščina", "id":"Indonezijščina", "it":"Italijanščina", "ja":"Japonščina", "tlh":"Klingon", "tlh-Qaak":"Klingon (pIqaD)", "ko":"Korejščina", "lv":"Latvijščina", "lt":"Litovščina", "ms":"Malajščina", "mt":"Malteščina", "no":"Norveščina", "fa":"Perzijščina", "pl":"Poljščina", "pt":"Portugalščina", "ro":"Romunščina", "ru":"Ruščina", "sk":"Slovaščina", "sl":"Slovenščina", "es":"Španščina", "sv":"Švedščina", "th":"Tajščina", "tr":"Turščina", "uk":"Ukrajinščina", "ur":"Urdu", "vi":"Vietnamščina", "cy":"Valižanščina" }
 		};
 
 		/**
@@ -709,6 +722,15 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
+			if ( $.inArray( options.locale, languageCodes ) === - 1 ) {
+				debug(
+					'microsoft.translator.getLanguageNames options.locale [' +
+					options.locale + '] is not a valid locale'
+				);
+
+				options.locale = 'en';
+			}
+
 			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 			query_params += '&languageCodes=' + encodeURIComponent( JSON.stringify( options.languageCodes ) );
 			query_params += '&locale=' + encodeURIComponent( options.locale );
@@ -1191,6 +1213,15 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
+			if ( $.inArray( options.language, languagesForSpeak ) === - 1 ) {
+				debug(
+					'microsoft.translator.speak options.language [' +
+					options.locale + '] is not a valid language value'
+				);
+
+				options.language = 'en';
+			}
+
 			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 			query_params += '&language=' + encodeURIComponent( options.language );
 			query_params += '&text=' + encodeURIComponent( options.text );
@@ -1325,6 +1356,15 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
+			if ( $.inArray( options.to, languageCodes ) === - 1 ) {
+				debug(
+					'microsoft.translator.translate options.to [' +
+					options.locale + '] is not a valid to value'
+				);
+
+				options.to = 'en';
+			}
+
 			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 			query_params += '&contentType=' + encodeURIComponent( options.contentType );
 			query_params += '&text=' + encodeURIComponent( options.text );
@@ -1337,7 +1377,14 @@ window.microsoft = (function( microsoft, $ ) {
 
 			// optional parameter from
 			if ( options.from ) {
-				query_params += '&from=' + encodeURIComponent( options.from );
+				if ( $.inArray( options.from, languageCodes ) === - 1 ) {
+					debug(
+						'microsoft.translator.translate options.from [' +
+						options.locale + '] is not a valid from value'
+					);
+				} else {
+					query_params += '&from=' + encodeURIComponent( options.from );
+				}
 			}
 
 			callback_index = setCallback( options.callback ) - 1;
@@ -1485,13 +1532,29 @@ window.microsoft = (function( microsoft, $ ) {
 				]
 			);
 
+			if ( $.inArray( options.to, languageCodes ) === - 1 ) {
+				debug(
+					'microsoft.translator.translateArray options.to [' +
+					options.locale + '] is not a valid to value'
+				);
+
+				options.to = 'en';
+			}
+
 			query_params += '&appId=Bearer+' + encodeURIComponent( options.appId );
 			query_params += '&texts=' + encodeURIComponent( JSON.stringify( options.texts ) );
 			query_params += '&to=' + encodeURIComponent( options.to );
 
 			// optional parameter from
 			if ( options.from ) {
-				query_params += '&from=' + encodeURIComponent( options.from );
+				if ( $.inArray( options.from, languageCodes ) === - 1 ) {
+					debug(
+						'microsoft.translator.translateArray options.from [' +
+						options.locale + '] is not a valid from value'
+					);
+				} else {
+					query_params += '&from=' + encodeURIComponent( options.from );
+				}
 			}
 
 			// optional parameter category
